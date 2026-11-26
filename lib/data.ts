@@ -3,6 +3,23 @@ export type Status = 'available' | 'waitlist' | 'b2b_only' | 'defunct';
 export type Sentiment = 'very_positive' | 'positive' | 'mixed' | 'negative';
 export type AvailabilityStatus = 'available' | 'waitlist' | 'b2b_only' | 'defunct';
 
+export interface TechSpecs {
+  structure: string;
+  wallAssembly: string;
+  rValue: string;
+  foundation: string;
+  electrical: string;
+  plumbing: string;
+  hvac: string;
+  windows: string;
+  certifications: string[];
+  fireRating: string;
+  seismic: string;
+  warranty: string;
+  squareFeetPerDay: string;
+  weightLbs: string;
+}
+
 export interface BuildStep {
   label: string;
   duration: string;
@@ -54,6 +71,7 @@ export interface Company {
   description: string;
   hq: string;
   founded: string;
+  techSpecs?: TechSpecs;
 }
 
 export const ZURU_TECH = {
