@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import NavBar from "@/components/NavBar";
 
 export const metadata: Metadata = {
   title: "Prefab Intel — Luxury Prefab & Modular Home Rankings 2026",
@@ -21,7 +22,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body style={{ margin: 0, padding: 0 }}>
+        <NavBar />
+        {children}
+      </body>
     </html>
   );
 }

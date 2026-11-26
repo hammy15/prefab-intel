@@ -1,6 +1,86 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { COMPANIES } from '@/lib/data';
+
+// ── Hidden costs accordion sub-component ───────────────────────────────────
+interface HiddenCostsProps {
+  state: string; sqft: number;
+  siteL: number; siteH: number;
+  permitL: number; permitH: number;
+  utilL: number; utilH: number;
+  delL: number; delH: number;
+  C: Record<string, string>;
+}
+function HiddenCostsAccordion({ state, sqft, siteL, siteH, permitL, permitH, utilL, utilH, delL, delH, C }: HiddenCostsProps) {
+  const [open, setOpen] = useState(false);
+  const fmtRange = (l: number, h: number) => `$${Math.round(l / 1000)}K – $${Math.round(h / 1000)}K`;
+  const items = [
+    { label: 'Foundation (slab / pier)', low: 8000, high: 80000, note: 'Varies enormously by soil, slope, and local labor' },
+    { label: 'Site Work (grading, clearing)', low: siteL * 0.3, high: siteH * 0.4, note: 'Steeper lots and rural sites cost more' },
+    { label: 'Permits & Fees', low: permitL, high: permitH, note: `${state} local + state permit costs` },
+    { label: 'Delivery & Crane', low: delL, high: delH, note: 'Oversize load trucking + crane set' },
+    { label: 'Utility Hookups', low: utilL, high: utilH, note: 'Electric, water, sewer / septic, gas if applicable' },
+    { label: 'Landscaping & Driveway', low: 8000, high: 35000, note: 'Often overlooked; required for CO in many jurisdictions' },
+    { label: 'Architect / Design Fees', low: 5000, high: 25000, note: 'Some prefab companies include this; custom requires separate architect' },
+    { label: 'Inspection & Testing', low: 2000, high: 8000, note: 'Energy compliance testing, structural inspections, CO process' },
+    { label: 'Contingency (10–15%)', low: Math.round(sqft * 25), high: Math.round(sqft * 60), note: 'Industry standard: always budget 10–15% for surprises' },
+  ];
+  const totalL = items.reduce((s, i) => s + i.low, 0);
+  const totalH = items.reduce((s, i) => s + i.high, 0);
+
+  return (
+    <div style={{ marginTop: '24px', background: C.surface, borderRadius: '14px', border: `1px solid ${C.border}` }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: '100%', padding: '20px 24px', background: 'none', border: 'none',
+          cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          fontFamily: 'Inter, sans-serif',
+        }}
+      >
+        <span style={{ fontWeight: 700, fontSize: '16px', color: C.navy }}>
+          🔍 Hidden Costs Breakdown
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ color: C.accent, fontWeight: 700 }}>{fmtRange(totalL, totalH)} typical add-ons</span>
+          <span style={{ color: C.muted, fontSize: '20px' }}>{open ? '▲' : '▼'}</span>
+        </div>
+      </button>
+      {open && (
+        <div style={{ padding: '0 24px 24px', borderTop: `1px solid ${C.border}` }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', marginTop: '16px' }}>
+            <thead>
+              <tr style={{ color: C.muted, fontSize: '12px' }}>
+                <th style={{ textAlign: 'left', padding: '8px 0', fontWeight: 600 }}>Cost Item</th>
+                <th style={{ textAlign: 'right', padding: '8px 0', fontWeight: 600 }}>Typical Range</th>
+                <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600 }}>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item, i) => (
+                <tr key={i} style={{ borderTop: `1px solid ${C.border}` }}>
+                  <td style={{ padding: '10px 0', fontWeight: 500, color: C.navy }}>{item.label}</td>
+                  <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 700, color: C.accent, whiteSpace: 'nowrap' }}>
+                    {fmtRange(item.low, item.high)}
+                  </td>
+                  <td style={{ padding: '10px 12px', color: C.muted, fontSize: '12px' }}>{item.note}</td>
+                </tr>
+              ))}
+              <tr style={{ borderTop: `2px solid ${C.navy}`, background: '#F5EFE6' }}>
+                <td style={{ padding: '12px 0', fontWeight: 700, color: C.navy }}>Total Add-Ons</td>
+                <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 800, color: C.accentDark, fontSize: '16px', whiteSpace: 'nowrap' }}>
+                  {fmtRange(totalL, totalH)}
+                </td>
+                <td style={{ padding: '12px 12px', color: C.muted, fontSize: '12px' }}>Beyond the base module price</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Idaho Dawn palette ──────────────────────────────────────────
 const C = {
@@ -31,7 +111,7 @@ interface CompanyData {
   slug: string;
 }
 
-const COMPANIES: CompanyData[] = [
+const CALC_COMPANIES: CompanyData[] = [
   {
     name: 'ICON',
     states: ['TX', 'ALL_EXPANDING'],
@@ -229,7 +309,7 @@ export default function CalculatorPage() {
 
     const matches: MatchResult[] = [];
 
-    for (const co of COMPANIES) {
+    for (const co of CALC_COMPANIES) {
       if (co.b2bOnly) continue;
       if (!servesState(co, state)) continue;
       if (!co.types.includes(projectType)) continue;
@@ -583,6 +663,94 @@ export default function CalculatorPage() {
               <strong style={{ color: C.navy }}>Disclaimer:</strong> These are estimates only. Base prices vary by design, finish level, and configuration.
               Site work varies dramatically based on lot conditions. Always get contractor quotes and verify company availability in your area before committing.
             </div>
+
+            {/* AI-style "Why these companies?" */}
+            {top3.length > 0 && (
+              <div style={{
+                marginTop: '32px', background: C.navy, borderRadius: '14px', padding: '28px',
+              }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: C.accentLight, marginBottom: '14px' }}>
+                  🤖 Why These Companies?
+                </h3>
+                <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '15px', lineHeight: '1.7', margin: 0 }}>
+                  Based on your inputs — <strong style={{ color: C.accentLight }}>{projectType}</strong> in <strong style={{ color: C.accentLight }}>{US_STATES.find(s => s.code === state)?.name}</strong>, {sqft.toLocaleString()} sqft, budget ${budgetK}K —
+                  the top matches prioritize companies that <strong style={{ color: '#fff' }}>directly serve your state</strong> and fall within your all-in budget range.
+                  {top3[0] && (
+                    <> <strong style={{ color: C.accent }}>{top3[0].company.name}</strong> ranks highest due to its combination of {top3[0].reasons.join(', ').toLowerCase()}. </>
+                  )}
+                  {projectType === 'ADU' && ' ADU-specific companies (Abodu, Villa Homes, Cover) are preferred because they handle permitting complexity that general modular builders don\'t.'}
+                  {projectType === 'Primary Home' && ' Primary home builders offer the full range of size options and typically have the best long-term warranty coverage.'}
+                  {state === 'CA' && ' California\'s strict Title 24 energy code and ADU regulations mean companies with established CA permits (Abodu, Villa, Cover, Plant Prefab) have a significant advantage.'}
+                </p>
+              </div>
+            )}
+
+            {/* Hidden Costs Accordion */}
+            {state && (
+              <HiddenCostsAccordion
+                state={state}
+                sqft={sqft}
+                siteL={siteL} siteH={siteH}
+                permitL={permitL} permitH={permitH}
+                utilL={utilL} utilH={utilH}
+                delL={delL} delH={delH}
+                C={C}
+              />
+            )}
+
+            {/* Financing Options */}
+            <div style={{ marginTop: '32px', background: C.surface, borderRadius: '14px', border: `1px solid ${C.border}`, padding: '28px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px', color: C.navy }}>
+                💰 Financing Options
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                {[
+                  { label: 'Construction-to-Perm', note: 'One-time-close converts to mortgage. Best for most prefab buyers.', ok: true },
+                  { label: 'Conventional Mortgage', note: 'Available for modular & panelized. Not for 3D-printed.', ok: true },
+                  { label: 'FHA / VA Loan', note: 'Available for modular homes that meet HUD standards.', ok: true },
+                  { label: 'HELOC / Cash-Out Refi', note: 'Ideal for ADUs — use equity in primary home.', ok: projectType === 'ADU' },
+                  { label: 'Portfolio / Bridge Loan', note: 'Non-QM lenders for unique property types.', ok: true },
+                  { label: 'Wells Fargo ICON Loan', note: 'First major bank for 3D-printed (ICON Wolf Ranch only).', ok: false },
+                ].map(item => (
+                  <div key={item.label} style={{
+                    background: item.ok ? C.surface2 : '#FEF3C7',
+                    borderRadius: '10px', padding: '14px 16px',
+                    border: `1px solid ${item.ok ? C.border : '#D97706'}`,
+                  }}>
+                    <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px', color: C.navy }}>
+                      {item.ok ? '✓' : '⚠'} {item.label}
+                    </div>
+                    <div style={{ fontSize: '13px', color: C.muted, lineHeight: '1.5' }}>{item.note}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: '16px' }}>
+                <a href="/mortgage" style={{
+                  display: 'inline-block', padding: '12px 24px', borderRadius: '10px',
+                  background: C.accent, color: '#fff', textDecoration: 'none',
+                  fontWeight: 700, fontSize: '14px',
+                }}>
+                  → Full Mortgage Calculator
+                </a>
+              </div>
+            </div>
+
+            {/* Compare Results Button */}
+            {top3.length >= 2 && (
+              <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                <a
+                  href={`/compare?${top3.map(r => `c=${COMPANIES.findIndex(c => c.name === r.company.name) + 1}`).join('&')}`}
+                  style={{
+                    display: 'inline-block', padding: '14px 32px', borderRadius: '12px',
+                    background: C.navy, color: '#fff', textDecoration: 'none',
+                    fontWeight: 700, fontSize: '16px',
+                    boxShadow: '0 4px 20px rgba(16,42,67,0.2)',
+                  }}
+                >
+                  ⚖️ Compare These {top3.length} Matches Side-by-Side →
+                </a>
+              </div>
+            )}
           </>
         )}
       </div>
